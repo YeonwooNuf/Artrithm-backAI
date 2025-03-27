@@ -1,2 +1,28 @@
-# macOS 용 gitignore
+# Python 환경 (venv, conda 등)
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+
+# 환경 변수 파일
+.env
+*.env
+
+# IDE 설정 파일
+.vscode/
+.idea/
+
+# OS 파일
 .DS_Store
+Thumbs.db
+
+# 로그 파일
+*.log
+
+# 테스트 관련
+.pytest_cache/
+.coverage
+
+# Jupyter notebook
+.ipynb_checkpoints
