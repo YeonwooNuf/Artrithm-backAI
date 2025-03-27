@@ -1,3 +1,6 @@
+# Python virtual environments
+py311/
+
 # Python 환경 (venv, conda 등)
 .venv/
 venv/
