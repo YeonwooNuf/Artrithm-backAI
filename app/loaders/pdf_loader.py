@@ -10,7 +10,7 @@ def load_pdf_and_create_vectorstore(pdf_path: str, artwork_id: int):
     splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     split_docs = splitter.split_documents(docs)
 
-    embeddings = OllamaEmbeddings(model="mistral")
+    embeddings = OllamaEmbeddings(model="gemma:2b")
 
     # ✅ 로컬에 저장
     save_path = f"vectorstore_cache/{artwork_id}"
