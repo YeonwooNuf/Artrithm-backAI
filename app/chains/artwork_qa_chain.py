@@ -1,25 +1,41 @@
-# 질문이 들어왔을 때,
-# 1) 관련 문단을 벡터 DB에서 검색하고
-# 2) LLM(Ollama llama3)을 이용해 답변을 생성하는 RAG 체인을 생성
-
 from langchain.chains import RetrievalQA
-from langchain.llms import Ollama
+from langchain_community.llms import Ollama
+from langchain.prompts import PromptTemplate
 
-# 주어진 벡터 저장소를 기반으로 Retrieval QA 체인을 생성하는 함수
 def get_qa_chain(vectorstore):
-    # 1. 벡터 저장소에서 유사 문서를 검색할 수 있도록 검색기 생성
     retriever = vectorstore.as_retriever(
         search_type="similarity",
-        search_kwargs={"score_threshold": 0.5}  # 유사도 기준 설정
+        search_kwargs={"score_threshold": 0.7}
     )
 
-    # 2. 로컬 Ollama LLM 모델 호출 (사전에 ollama run mistral 실행 필요)
     llm = Ollama(model="gemma:2b")
 
-    # 3. 검색기 + LLM 조합으로 QA 체인 생성
+    # ✅ 한국어 응답 유도 프롬프트 템플릿
+    prompt_template = """
+    너는 미술 작품에 대한 설명을 도와주는 AI야.
+    아래 문서를 참고해서 사용자의 질문에 대해 **자연스럽고 친절한 한국어로** 답변해줘.
+    미술 작품에 관련되지 않은 질문에는 제공되지 않는 내용이라고 답변해줘.
+
+    문서 내용:
+    {context}
+
+    질문:
+    {question}
+
+    답변 (한국어로):
+    """
+
+    prompt = PromptTemplate(
+        input_variables=["context", "question"],
+        template=prompt_template.strip()
+    )
+
+    # ✅ 프롬프트를 포함한 QA 체인 생성
     qa_chain = RetrievalQA.from_chain_type(
         llm=llm,
         retriever=retriever,
+        chain_type="stuff",
+        chain_type_kwargs={"prompt": prompt},
         return_source_documents=True
     )
 
