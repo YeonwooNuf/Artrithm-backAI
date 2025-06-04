@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+python-multipart  # ✅ FormData 처리를 위해 반드시 필요
+
+langchain
+langchain-community  # ✅ PDF 로더, FAISS, Ollama 연동 등 필수
+
+ollama
+faiss-cpu
+PyPDF2
+pydantic
+pypdf
+
+langchain-ollama
