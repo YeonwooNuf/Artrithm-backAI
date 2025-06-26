@@ -1,7 +1,7 @@
 from fastapi import APIRouter, UploadFile, File, Form
 from pydantic import BaseModel
 from app.loaders.pdf_loader import load_pdf_and_create_vectorstore
-from app.loaders.vector_loader import load_vectorstore  # ✅ 벡터스토어 로더 추가
+from app.loaders.vector_loader import load_vectorstore
 from app.chains.artwork_qa_chain import get_qa_chain
 import os
 
@@ -11,7 +11,7 @@ class LLMQuery(BaseModel):
     artworkId: int
     question: str
 
-# ✅ 질문 처리: 벡터를 실시간 생성 ❌, 저장된 것 로드 ⭕
+# ✅ 질문 처리: 저장된 벡터 DB를 사용하여 답변 생성
 @router.post("/query")
 def query_llm(q: LLMQuery):
     pdf_path = f"documents/{q.artworkId}.pdf"
@@ -30,7 +30,18 @@ def query_llm(q: LLMQuery):
     if not result:
         return {"answer": "답변 생성에 실패했습니다."}
 
-    return {"answer": result["result"]}
+    # ✅ 출처 문서 포함해서 반환
+    return {
+        "answer": result["result"],
+        "source_documents": [
+            {
+                "content": doc.page_content,
+                "page": doc.metadata.get("page"),
+                "score": doc.metadata.get("score", 0.0)
+            }
+            for doc in result.get("source_documents", [])
+        ]
+    }
 
 # ✅ PDF 업로드 및 벡터 DB 생성
 @router.post("/upload")
