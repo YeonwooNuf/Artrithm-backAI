@@ -1,14 +1,14 @@
 fastapi
 uvicorn
-python-multipart  # ✅ FormData 처리를 위해 반드시 필요
-
+python-multipart
 langchain
-langchain-community  # ✅ PDF 로더, FAISS, Ollama 연동 등 필수
-
+langchain-community
 ollama
 faiss-cpu
 PyPDF2
 pydantic
 pypdf
-
 langchain-ollama
+pymysql
+sentence-transformers
+torch
