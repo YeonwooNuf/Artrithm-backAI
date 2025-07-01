@@ -2,7 +2,8 @@ from fastapi import APIRouter, UploadFile, File, Form
 from pydantic import BaseModel
 from app.loaders.pdf_loader import load_pdf_and_create_vectorstore
 from app.loaders.vector_loader import load_vectorstore
-from app.chains.artwork_qa_chain import get_qa_chain
+from langchain.prompts import PromptTemplate
+from langchain_community.llms import Ollama
 import os
 
 router = APIRouter()
@@ -11,7 +12,6 @@ class LLMQuery(BaseModel):
     artworkId: int
     question: str
 
-# ✅ 질문 처리: 저장된 벡터 DB를 사용하여 답변 생성
 @router.post("/query")
 def query_llm(q: LLMQuery):
     pdf_path = f"documents/{q.artworkId}.pdf"
@@ -24,39 +24,48 @@ def query_llm(q: LLMQuery):
         return {"answer": "설명 파일은 있지만 벡터 DB가 없습니다. PDF를 다시 업로드 해주세요."}
 
     vectorstore = load_vectorstore(q.artworkId)
-    qa_chain = get_qa_chain(vectorstore)
-    result = qa_chain.invoke(q.question)
 
-    if not result:
-        return {"answer": "답변 생성에 실패했습니다."}
+    # ✅ 벡터 검색
+    retriever = vectorstore.as_retriever(
+        search_type="similarity",
+        search_kwargs={"score_threshold": 0.7}
+    )
+    docs = retriever.get_relevant_documents(q.question)
 
-    # ✅ 출처 문서 포함해서 반환
+    if not docs:
+        return {
+            "answer": "해당 질문은 작품과 관련되지 않았습니다.",
+            "source_documents": []
+        }
+
+    # ✅ context 만들기
+    context = "\n\n".join(doc.page_content for doc in docs)
+
+    prompt_template = """
+    너는 미술관에서 작품을 관람하는 사용자들에게 미술 작품에 대한 설명을 도와주는 AI야.
+    아래 문서를 참고해서 사용자의 질문에 대해 **자연스럽고 친절한 한국어(Korean)로** 답변해줘.
+    문서 내용:
+    {context}
+
+    질문:
+    {question}
+
+    답변 (한국어로):
+    """
+    prompt = PromptTemplate.from_template(prompt_template.strip())
+
+    llm = Ollama(model="gemma:2b")
+    formatted_prompt = prompt.format(context=context, question=q.question)
+    answer = llm.invoke(formatted_prompt)
+
     return {
-        "answer": result["result"],
+        "answer": answer,
         "source_documents": [
             {
                 "content": doc.page_content,
                 "page": doc.metadata.get("page"),
                 "score": doc.metadata.get("score", 0.0)
             }
-            for doc in result.get("source_documents", [])
+            for doc in docs
         ]
     }
-
-# ✅ PDF 업로드 및 벡터 DB 생성
-@router.post("/upload")
-def upload_pdf(artworkId: int = Form(...), file: UploadFile = File(...)):
-    if not file.filename.endswith(".pdf"):
-        return {"error": "PDF 파일만 업로드할 수 있습니다."}
-
-    os.makedirs("documents", exist_ok=True)
-    os.makedirs("vectorstore_cache", exist_ok=True)
-
-    pdf_path = f"documents/{artworkId}.pdf"
-    with open(pdf_path, "wb") as f:
-        f.write(file.file.read())
-
-    # ✅ 업로드할 때 벡터 저장소 생성 및 디스크에 저장
-    load_pdf_and_create_vectorstore(pdf_path, artworkId)
-
-    return {"message": "PDF 업로드 및 벡터 저장 완료"}
