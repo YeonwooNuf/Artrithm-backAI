@@ -9,3 +9,6 @@ PyPDF2
 pydantic
 pypdf
 langchain-ollama
+pymysql
+sentence-transformers
+torch
