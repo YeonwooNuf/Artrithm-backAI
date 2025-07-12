@@ -9,7 +9,12 @@ app = FastAPI()
 # ✅ CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # 프론트 주소
+    allow_origins=[
+        "http://192.168.0.56:5173",  # 내부 IP
+        "http://172.30.1.54:5173",
+        "http://192.168.10.159:5173",
+        "http://localhost:5173",     # 로컬호스트도 추가
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
