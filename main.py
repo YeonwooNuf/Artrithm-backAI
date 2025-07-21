@@ -14,6 +14,7 @@ app.add_middleware(
         "http://172.30.1.54:5173",
         "http://192.168.10.159:5173",
         "http://localhost:5173",     # 로컬호스트도 추가
+        "http://172.30.1.11:5173",
     ],
     allow_credentials=True,
     allow_methods=["*"],
